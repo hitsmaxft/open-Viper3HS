@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,84 +14,88 @@
       <div>
         <p class="eyebrow">LOCAL DEVICE CONTROL · 1532:00B8</p>
         <h1>open-Viper3HS</h1>
-        <p class="lead">轻量的 Viper V3 HyperSpeed 配置页。浏览器生成报文，由本机 HID 桥发给接收器。</p>
+        <p class="lead" data-i18n="lead">A compact Viper V3 HyperSpeed configurator. The browser builds reports; a local HID bridge sends them to the receiver.</p>
+      </div>
+      <div class="language-switch" role="group" aria-label="Language / 语言">
+        <button id="lang-en" type="button" aria-pressed="true">English</button>
+        <button id="lang-zh" type="button" aria-pressed="false">中文</button>
       </div>
     </header>
 
     <section class="card connect-card" aria-labelledby="connection-title">
       <div>
         <p class="eyebrow">01 / CONNECTION</p>
-        <h2 id="connection-title">连接鼠标接收器</h2>
-        <p id="connection-detail" class="muted">先下载源码并启动本地 HID 桥，再点击连接。原厂接收器把配置报告放在受保护的 Mouse collection 内，Chrome/Edge WebHID 无法直接访问。</p>
+        <h2 id="connection-title" data-i18n="connectionTitle">Connect the mouse receiver</h2>
+        <p id="connection-detail" class="muted" data-i18n="connectionDetail">Download the source and start the local HID bridge first. The receiver's configuration reports are inside a protected Mouse collection, so Chrome/Edge cannot use direct WebHID.</p>
       </div>
       <div class="actions">
-        <button id="bridge-connect" class="primary">连接本地 HID 桥</button>
-        <button id="connect" disabled title="原厂接收器的配置 Feature Report 位于受保护的 Mouse collection">WebHID 直连不可用</button>
-        <button id="refresh" disabled>读取配置</button>
+        <button id="bridge-connect" class="primary" data-i18n="connectBridge">Connect local HID bridge</button>
+        <button id="connect" disabled data-i18n="webhidUnavailable" data-i18n-title="webhidReason" title="The receiver's configuration Feature Report is inside a protected Mouse collection">Direct WebHID unavailable</button>
+        <button id="refresh" disabled data-i18n="readSettings">Read settings</button>
       </div>
-      <p id="connection-status" class="status" role="status">正在加载 WASM…</p>
+      <p id="connection-status" class="status" role="status" data-i18n="loading">Loading WASM…</p>
     </section>
 
-    <section class="dashboard" aria-label="当前配置">
-      <div class="metric"><span>当前 DPI</span><strong id="current-dpi">—</strong><small>X / Y</small></div>
-      <div class="metric"><span>轮询率</span><strong id="current-poll">—</strong><small>原厂 1K 接收器</small></div>
-      <div class="metric"><span>休眠时间</span><strong id="current-idle">—</strong><small>秒</small></div>
+    <section class="dashboard" data-i18n-aria-label="currentSettings" aria-label="Current settings">
+      <div class="metric"><span data-i18n="currentDpi">Current DPI</span><strong id="current-dpi">—</strong><small>X / Y</small></div>
+      <div class="metric"><span data-i18n="pollingRate">Polling rate</span><strong id="current-poll">—</strong><small data-i18n="stockReceiver">Stock 1K receiver</small></div>
+      <div class="metric"><span data-i18n="idleTime">Idle time</span><strong id="current-idle">—</strong><small data-i18n="seconds">seconds</small></div>
     </section>
 
     <div class="grid">
       <section class="card" aria-labelledby="dpi-title">
         <p class="eyebrow">02 / SENSITIVITY</p>
         <h2 id="dpi-title">DPI</h2>
-        <p class="muted">当前 DPI 由活动档位决定。直接写即时 DPI 会在档位重新应用时恢复；请在下方修改板载档位。</p>
-        <div class="row"><span>板载档位</span><strong id="active-stage">—</strong></div>
-        <div id="stages" class="stages"><span class="muted">连接后读取</span></div>
+        <p class="muted" data-i18n="dpiExplanation">The active onboard stage controls current DPI. A temporary DPI value is lost when that stage is reapplied; edit the onboard stages below.</p>
+        <div class="row"><span data-i18n="onboardStages">Onboard stages</span><strong id="active-stage">—</strong></div>
+        <div id="stages" class="stages"><span class="muted" data-i18n="readAfterConnect">Read after connecting</span></div>
         <form id="stages-form" class="stage-editor">
-          <p class="muted">逐档修改 DPI（同步设置 X/Y），并选择当前档位。改动会写入板载配置，随后完整读回核对。</p>
+          <p class="muted" data-i18n="stagesExplanation">Set each stage's DPI (X and Y together) and select the active stage. Changes are written onboard and read back for verification.</p>
           <div id="stage-rows" class="stage-rows"></div>
-          <label for="stage-active">当前档位</label>
-          <div class="input-row"><select id="stage-active" disabled></select><button type="submit" disabled>写入档位</button></div>
+          <label for="stage-active" data-i18n="activeStage">Active stage</label>
+          <div class="input-row"><select id="stage-active" disabled></select><button type="submit" disabled data-i18n="writeStages">Write stages</button></div>
         </form>
       </section>
 
       <section class="card" aria-labelledby="rate-title">
         <p class="eyebrow">03 / PERFORMANCE</p>
-        <h2 id="rate-title">轮询率</h2>
-        <p class="muted">此页仅针对 VID 1532 / PID 00B8 的原厂接收器。</p>
+        <h2 id="rate-title" data-i18n="pollingRate">Polling rate</h2>
+        <p class="muted" data-i18n="receiverOnly">This page targets the stock VID 1532 / PID 00B8 receiver only.</p>
         <form id="poll-form">
-          <label for="poll-input">报告频率</label>
-          <div class="input-row"><select id="poll-input" disabled><option value="125">125 Hz</option><option value="500">500 Hz</option><option value="1000" selected>1000 Hz</option></select><button type="submit" disabled>写入频率</button></div>
+          <label for="poll-input" data-i18n="reportFrequency">Report frequency</label>
+          <div class="input-row"><select id="poll-input" disabled><option value="125">125 Hz</option><option value="500">500 Hz</option><option value="1000" selected>1000 Hz</option></select><button type="submit" disabled data-i18n="writeRate">Write rate</button></div>
         </form>
         <div class="divider"></div>
         <form id="idle-form">
-          <label for="idle-input">休眠时间（秒）</label>
-          <div class="input-row"><input id="idle-input" type="number" min="60" max="900" step="1" value="300" required disabled><button type="submit" disabled>写入时间</button></div>
+          <label for="idle-input" data-i18n="idleSeconds">Idle time (seconds)</label>
+          <div class="input-row"><input id="idle-input" type="number" min="60" max="900" step="1" value="300" required disabled><button type="submit" disabled data-i18n="writeTime">Write time</button></div>
         </form>
       </section>
     </div>
 
     <section class="card power" aria-labelledby="power-title">
       <p class="eyebrow">04 / POWER</p>
-      <h2 id="power-title">电源状态</h2>
-      <div class="power-values"><div>电量 <strong id="battery-level">—</strong></div><div>充电状态 <strong id="charging-status">—</strong></div><div>低电量提醒 <strong id="current-threshold">—</strong></div></div>
+      <h2 id="power-title" data-i18n="powerStatus">Power status</h2>
+      <div class="power-values"><div><span data-i18n="battery">Battery</span> <strong id="battery-level">—</strong></div><div><span data-i18n="charging">Charging</span> <strong id="charging-status">—</strong></div><div><span data-i18n="lowBattery">Low battery alert</span> <strong id="current-threshold">—</strong></div></div>
       <form id="threshold-form">
-        <label for="threshold-input">低电量提醒阈值（5–30%）</label>
-        <div class="input-row"><input id="threshold-input" type="number" min="5" max="30" step="1" value="30" required disabled><button type="submit" disabled>写入阈值</button></div>
+        <label for="threshold-input" data-i18n="thresholdLabel">Low battery alert threshold (5–30%)</label>
+        <div class="input-row"><input id="threshold-input" type="number" min="5" max="30" step="1" value="30" required disabled><button type="submit" disabled data-i18n="writeThreshold">Write threshold</button></div>
       </form>
     </section>
 
     <section class="card danger" aria-labelledby="reset-title">
       <p class="eyebrow">05 / DEVICE</p>
-      <h2 id="reset-title">恢复出厂配置</h2>
-      <p class="muted">会重置鼠标配置。点击后还需要输入 RESET 确认。不会更改 macOS 的滚动方向设置。</p>
-      <button id="reset" disabled>恢复出厂设置</button>
+      <h2 id="reset-title" data-i18n="factoryReset">Factory reset</h2>
+      <p class="muted" data-i18n="resetExplanation">Resets mouse settings. You must type RESET to confirm. This does not change the macOS scroll direction setting.</p>
+      <button id="reset" disabled data-i18n="resetButton">Reset to defaults</button>
     </section>
 
     <section class="card diagnostics" aria-labelledby="log-title">
-      <div class="row"><h2 id="log-title">设备日志</h2><button id="clear-log" class="subtle">清空</button></div>
-      <pre id="log" aria-live="polite">等待连接。</pre>
+      <div class="row"><h2 id="log-title" data-i18n="deviceLog">Device log</h2><button id="clear-log" class="subtle" data-i18n="clear">Clear</button></div>
+      <pre id="log" aria-live="polite" data-i18n="waiting">Waiting to connect.</pre>
     </section>
 
-    <footer>本地 HID 桥 + Rust WASM · 无账户 · <a href="https://github.com/openrazer/openrazer" target="_blank" rel="noreferrer">协议参考</a></footer>
+    <footer><span data-i18n="footer">Local HID bridge + Rust WASM · No account ·</span> <a href="https://github.com/openrazer/openrazer" target="_blank" rel="noreferrer" data-i18n="protocolReference">Protocol reference</a></footer>
   </main>
   <script type="module" src="./app.js"></script>
 </body>

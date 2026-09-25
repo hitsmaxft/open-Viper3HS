@@ -1,5 +1,59 @@
 # open-Viper3HS
 
+[English](#english) · [中文](#中文)
+
+## English
+
+open-Viper3HS is a compact configuration page for the Razer Viper V3 HyperSpeed with the stock `1532:00B8` receiver. It uses a small Rust WASM report codec, a static web page, and a local hidapi WebSocket bridge. It does not require OpenRazer or an account.
+
+### Quick start
+
+On the computer connected to the receiver, install [uv](https://docs.astral.sh/uv/getting-started/installation/), then download the source and start the bridge:
+
+```bash
+git clone https://github.com/hitsmaxft/open-Viper3HS.git
+cd open-Viper3HS
+uv run --script scripts/bridge.py
+```
+
+Keep that terminal running. On the **same computer**, open the [GitHub Pages configurator](https://gh.bhee.online/open-Viper3HS/) in Chrome or Edge and select **Connect local HID bridge**. Once the page shows **Read 7/7 settings**, the controls are available. The bridge listens on `127.0.0.1:8766` only. If the browser asks for local network access, allow access to the bridge.
+
+To host the page locally instead, run these commands in another terminal. Building the page requires Rust and the `wasm32-unknown-unknown` target; using GitHub Pages does not.
+
+```bash
+rustup target add wasm32-unknown-unknown
+./scripts/build.sh
+python3 -m http.server 8765 --bind 127.0.0.1 --directory dist
+```
+
+Then open `http://127.0.0.1:8765/` and use the same bridge button. The page has an English/中文 switch and remembers the selected language.
+
+### Supported settings and limits
+
+The page reads polling rate, current X/Y DPI, onboard DPI stages, idle time, battery level, charging state, and the low battery alert threshold. It can edit each onboard DPI stage (linked X/Y, 100–30000), select the active stage, set stock receiver polling rate (125/500/1000 Hz), idle time (60–900 seconds), and low battery threshold (5–30%). Writes are read back. Factory reset requires typing `RESET`.
+
+Button mapping, macros, lift off distance, Motion Sync, and scroll direction are absent because no command has been verified for this exact model. Temporary DPI writes are not offered because reapplying the active onboard stage replaces them.
+
+The receiver puts its configuration Feature Report inside a protected Mouse HID collection. Chrome/Edge cannot access it through direct WebHID, so that button is disabled. GitHub Pages serves only static HTML/CSS/JS/WASM; the receiver data is exchanged through your own loopback bridge. The bridge accepts the hosted page, the local preview, and local clients without an Origin header. It opens and closes the HID handle for each transaction after a long held handle caused status `0x04` timeouts while pointer movement still worked.
+
+Seven read commands and the settings above were tested through hidapi on this receiver. DPI stages were changed, read back byte for byte, reloaded after a page refresh, and restored. See the [validation log](validation/README.md) and [WebHID firmware feasibility analysis](validation/firmware-webhid-feasibility.md). Direct WebHID failed even after stopping the bridge. The stock receiver's protected HID descriptor matches [Chrome's protected collection rules](https://developer.chrome.com/docs/capabilities/hid#security_and_privacy).
+
+### Development and diagnostics
+
+`core/` contains the dependency free Rust WASM codec for 91 byte reports, XOR checksums, and reply matching. `web/` contains the page and native JavaScript; there is no npm build dependency. `scripts/bridge.py` provides a one request, one reply JSON protocol:
+
+- `{"op":"list"}` lists HID interfaces.
+- `{"op":"open"}` selects the usable interface.
+- `{"op":"exchange","report":"<91-byte hex report>"}` sends a report and returns a hex `report`. This operation can also write settings or reset the device, so construct reports deliberately.
+
+With the bridge running, `node scripts/smoke.mjs` checks four read only transactions using the built WASM codec. Set `CARGO_TARGET_DIR=/path/to/shared/target` to reuse a Cargo cache. The Pages workflow builds and publishes `dist/` from the [source repository](https://github.com/hitsmaxft/open-Viper3HS).
+
+If the bridge cannot be used, the parent workspace contains a hidapi CLI at `razer-viper-v3hs-util/razer_viper_v3hs_util.py`. A standalone GitHub Pages page using standard WebHID cannot configure this receiver's stock firmware.
+
+Protocol references: [OpenRazer device branch](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razermouse_driver.c), [report constructors](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razerchromacommon.c), [Chrome WebHID](https://developer.chrome.com/docs/capabilities/hid).
+
+## 中文
+
 Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的配置页。**先在连接鼠标的电脑上启动本地 HID 桥，再打开 [GitHub Pages](https://gh.bhee.online/open-Viper3HS/) 或自行启动网页，点击「连接本地 HID 桥」。**原厂接收器的配置 Feature Report 位于顶层 Mouse HID collection 内，Chrome/Edge WebHID 无法直接访问；页面中的 WebHID 按钮因此禁用。无需 OpenRazer。
 
 ## 使用
