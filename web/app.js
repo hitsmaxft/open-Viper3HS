@@ -269,26 +269,35 @@ async function refresh() {
 $('connect').addEventListener('click', () => run('连接', async () => {
   if (!navigator.hid) throw new Error(`当前页面没有 WebHID（安全上下文：${window.isSecureContext ? '是' : '否'}）；请使用桌面版 Chrome 或 Edge，通过 HTTPS 或本机 127.0.0.1 访问`);
   const chosen = await navigator.hid.requestDevice({ filters: [{ vendorId: VID, productId: PID }] });
-  if (!chosen.length) { status('未选择设备；请在浏览器设备选择框中确认，或检查接收器是否列出'); return; }
+  const granted = (await navigator.hid.getDevices()).filter((item) => item.vendorId === VID && item.productId === PID);
+  if (!chosen.length && !granted.length) { status('未选择设备；请在浏览器设备选择框中确认，或检查接收器是否列出'); return; }
   if (device?.opened) await device.close();
   if (bridge?.readyState === WebSocket.OPEN) bridge.close();
   bridge = undefined;
   sessionStorage.removeItem('localBridge');
-  device = chosen[0];
   validated = false;
-  const collections = device.collections.map((item) => `${item.usagePage.toString(16)}:${item.usage.toString(16)}`).join(', ') || '未声明';
-  log(`已选择 HID 设备；collections: ${collections}`);
-  if (device.collections.length && device.collections.every((item) => item.usagePage === 1 && item.usage === 2)) {
-    throw new Error('浏览器只暴露 Mouse (01:02) collection；该接收器的配置 Feature Report 位于受保护的鼠标 collection 内。请使用本地调试桥。');
+  const candidates = [...chosen, ...granted];
+  log(`浏览器选择 ${chosen.length} 个、已授权 ${granted.length} 个同型号 HID 对象`);
+  let lastError;
+  for (const candidate of candidates) {
+    device = candidate;
+    const collections = candidate.collections.map((item) => `${item.usagePage.toString(16)}:${item.usage.toString(16)}`).join(', ') || '未声明';
+    log(`尝试 HID 接口；collections: ${collections}`);
+    try {
+      if (!candidate.opened) await candidate.open();
+      await transact(0, 0x85, Uint8Array.of(0));
+      $('connection-detail').textContent = `${candidate.productName} · VID ${VID.toString(16)} / PID ${PID.toString(16)} · ${collections}`;
+      log(`已验证配置 Feature Report 接口：${collections}`);
+      await refresh();
+      return;
+    } catch (error) {
+      lastError = error;
+      log(`接口不可用于配置：${error.message || error}`);
+      if (candidate.opened) await candidate.close();
+    }
   }
-  try {
-    await device.open();
-  } catch (error) {
-    throw new Error(`已授权 ${device.productName}，但 Chrome 无法打开其 HID 接口：${error.message || error}`);
-  }
-  $('connection-detail').textContent = `${device.productName} · VID ${VID.toString(16)} / PID ${PID.toString(16)}`;
-  log(`已打开 HID 接口；collections: ${collections}`);
-  await refresh();
+  device = undefined;
+  throw new Error(`已尝试 ${candidates.length} 个授权对象，均无法读写配置 Feature Report。最后错误：${lastError?.message || lastError || '未知'}`);
 }));
 
 async function connectBridge() {

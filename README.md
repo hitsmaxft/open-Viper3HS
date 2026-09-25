@@ -15,6 +15,8 @@ Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的配置页，可发�
 
 **验证状态**：七项读取命令已通过这台 `1532:00B8` 设备的 hidapi 路径验证。轮询率、即时 DPI、休眠时间、低电量阈值已做改值读回和恢复；DPI 档位已做活动档位切换、非当前档位改值、逐字节读回、页面刷新后重读和恢复。即时 DPI 写入会在活动档位重新应用时失效，所以界面只提供板载档位编辑。详细记录见 `validation/README.md`。本机 Chrome 授权后 `HIDDevice.open()` 失败；另一浏览器环境能打开 HID 对象，但七项 Feature Report 全部被拒绝。停止本地桥后问题仍在；单独运行 hidapi 成功。接口 0 的 HID 描述符把厂商 Feature Report 包在 Mouse application collection 内，与 [Chrome 的受保护 collection 规则](https://developer.chrome.com/docs/capabilities/hid#security_and_privacy)相符。
 
+页面现在也会逐个尝试同 PID 的已授权 HID 对象；本机两个对象均无法打开。固件级改动的证据、可能路线及恢复缺口见 [WebHID 固件可行性分析](validation/firmware-webhid-feasibility.md)。
+
 ## 本地构建
 
 要求 Rust 和 `wasm32-unknown-unknown` target：

@@ -30,3 +30,5 @@
 本机 Chrome WebHID 可以授权设备，但 `HIDDevice.open()` 返回 `Failed to open the device`；另一个 HTTPS WebHID 页面同样失败。2026-09-25 11:29 本地桥进程已停止且 `8766` 无监听，Chrome 再次授权后打开接口仍失败；11:30 独立 hidapi 只读脚本能打开 interface 0 并读取配置。桥占用 HID 不是这次直连失败的充分解释。Chrome `open()` 失败的底层原因尚未单独定位。本地桥验证覆盖 WASM 编解码、WebSocket 桥和设备 Feature Report，不代表 Chrome 直接 WebHID 通路已可用。尚未做断电后持久性、Linux 内核驱动实机或固件重刷验证。恢复出厂是破坏性命令，未在本轮重新执行。
 
 进一步读取 interface 0 的 94 字节 HID 描述符：顶层 Application collection 为 `05 01 09 02 A1 01`（Generic Desktop / Mouse），其中 `06 00 FF 09 02 ... 75 08 95 5A B1 01` 定义 90 字节厂商 Feature Report。浏览器实际暴露的 collections 包含 `01:02`；另一浏览器环境虽能 `open()`，全部七项 `sendFeatureReport(0, ...)` 均返回 `Failed to write the feature report`。这与 Chrome 官方的受保护 Mouse collection 规则吻合。原厂固件未另设独立、可供网页访问的厂商配置 collection，故仅靠 GitHub Pages + 标准 WebHID 在当前硬件上不可用。
+
+参照 RazerKit 的做法，页面现枚举并尝试同 PID 所有已授权 `HIDDevice`。桥完全停止时，Chrome `requestDevice()` 本次返回 0 个对象，`getDevices()` 返回 2 个授权对象：collections 分别为 `01:02` 与 `01:02, 0C:01, 01:00 ...`。两个对象都在 `open()` 阶段返回 `Failed to open the device`。因此仅把 `chosen[0]` 改为逐个尝试没有解决本机的直连问题。用户在 RazerKit 页面也复现连接失败。
