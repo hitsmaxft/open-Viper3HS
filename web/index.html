@@ -83,8 +83,47 @@
       </form>
     </section>
 
+    <section class="card bindings" aria-labelledby="bindings-title">
+      <p class="eyebrow">05 / BUTTONS</p>
+      <h2 id="bindings-title" data-i18n="buttonMappings">Button mappings</h2>
+      <p class="muted" data-i18n="bindingsExplanation">Choose an onboard profile or the active RAM mapping, then read a button before editing. The two side buttons, wheel directions, and DPI button are included. Every write is read back.</p>
+      <p class="muted" data-i18n="profileLimit">Profiles 1–5 have separate firmware mapping tables. Persistence after power loss has not yet been tested on this mouse.</p>
+      <form id="binding-form">
+        <div class="binding-selectors">
+          <label><span data-i18n="bindingProfile">Profile</span><select id="binding-profile"><option value="0" data-i18n="activeRam">Active RAM (temporary)</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+          <label><span data-i18n="bindingInput">Physical input</span><select id="binding-input"></select></label>
+          <label><span data-i18n="bindingLayer">Layer</span><select id="binding-layer"><option value="0" data-i18n="normalLayer">Normal</option><option value="1" data-i18n="shiftLayer">Hypershift</option></select></label>
+        </div>
+        <div class="profile-overview">
+          <div class="row"><strong data-i18n="profileOverview">Profile button map</strong><div class="actions"><button id="profile-read-all" type="button" data-i18n="readAllBindings">Read all buttons</button><button id="profile-activate" type="button" data-i18n="activateProfile">Activate selected profile</button></div></div>
+          <p class="muted" data-i18n="activateProfileLimit">The separate 05/04 activation command is known from the updater; its effect on this receiver has not been tested.</p>
+          <div id="profile-grid" class="profile-grid"><span class="muted" data-i18n="readAfterConnect">Read after connecting</span></div>
+        </div>
+        <div class="input-row"><button id="binding-read" type="button" data-i18n="readBinding">Read binding</button><strong id="binding-current">—</strong></div>
+        <div class="wheel-shortcuts">
+          <div><strong data-i18n="wheelDirection">Wheel direction</strong><p class="muted" data-i18n="wheelShortcutHelp">Applies to both wheel inputs in the selected profile's normal layer. Active RAM changes are temporary.</p><span id="wheel-current" class="muted">—</span></div>
+          <div class="actions"><button id="wheel-default" type="button" data-i18n="wheelDefault">Restore default</button><button id="wheel-invert" type="button" data-i18n="wheelInvert">Invert direction</button></div>
+        </div>
+        <label for="binding-action" data-i18n="bindingAction">Action</label>
+        <div class="input-row"><select id="binding-action"></select><button id="binding-pick" type="button" data-i18n="chooseAction">Choose action…</button></div>
+        <div id="binding-parameters" class="binding-parameters"></div>
+        <label for="binding-raw" data-i18n="bindingRaw">Seven-byte mapping (hex)</label>
+        <input id="binding-raw" type="text" spellcheck="false" placeholder="01 01 04 00 00 00 00">
+        <p class="muted" data-i18n="bindingRawHelp">The action selector fills a starting value. The exact seven bytes above are written. Unsupported firmware categories are read-only.</p>
+        <div class="actions"><button id="binding-write" type="submit" disabled data-i18n="writeBinding">Write and verify</button><button id="binding-restore" type="button" disabled data-i18n="restoreBinding">Restore previous</button></div>
+      </form>
+    </section>
+
+    <dialog id="binding-picker" aria-labelledby="binding-picker-title">
+      <div class="row"><h2 id="binding-picker-title" data-i18n="chooseAction">Choose action…</h2><button id="binding-picker-close" type="button" class="subtle" data-i18n="close">Close</button></div>
+      <p class="muted" data-i18n="pickerExplanation">Select an action to fill the editor. Saving still requires Write and verify.</p>
+      <input id="binding-search" type="search" data-i18n-aria-label="searchActions" data-i18n-placeholder="searchActions" placeholder="Search actions or codes">
+      <div id="binding-choices" class="binding-choices"></div>
+      <p class="muted" data-i18n="profileSwitchUnavailable">Profile-switch binding (0x07) is documented for other Razer mice but is ignored by this model's firmware.</p>
+    </dialog>
+
     <section class="card danger" aria-labelledby="reset-title">
-      <p class="eyebrow">05 / DEVICE</p>
+      <p class="eyebrow">06 / DEVICE</p>
       <h2 id="reset-title" data-i18n="factoryReset">Factory reset</h2>
       <p class="muted" data-i18n="resetExplanation">Resets mouse settings. You must type RESET to confirm. This does not change the macOS scroll direction setting.</p>
       <button id="reset" disabled data-i18n="resetButton">Reset to defaults</button>
@@ -95,7 +134,7 @@
       <pre id="log" aria-live="polite" data-i18n="waiting">Waiting to connect.</pre>
     </section>
 
-    <footer><span data-i18n="footer">Local HID bridge + Rust WASM · No account ·</span> <a href="https://github.com/openrazer/openrazer" target="_blank" rel="noreferrer" data-i18n="protocolReference">Protocol reference</a></footer>
+    <footer><span data-i18n="footer">Local HID bridge + Rust WASM · No account ·</span> <a href="https://github.com/geezmolycos/razerqdhid/blob/main/docs/cmd_button.md" target="_blank" rel="noreferrer" data-i18n="buttonReference">Button protocol by geezmolycos</a> · <a href="https://github.com/openrazer/openrazer" target="_blank" rel="noreferrer" data-i18n="protocolReference">Protocol reference</a></footer>
   </main>
   <script type="module" src="./app.js"></script>
 </body>

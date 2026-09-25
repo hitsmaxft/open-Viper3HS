@@ -32,11 +32,11 @@ Then open `http://127.0.0.1:8765/` and use the same bridge button. The page has 
 
 The page reads polling rate, current X/Y DPI, onboard DPI stages, idle time, battery level, charging state, and the low battery alert threshold. It can edit each onboard DPI stage (linked X/Y, 100–30000), select the active stage, set stock receiver polling rate (125/500/1000 Hz), idle time (60–900 seconds), and low battery threshold (5–30%). Writes are read back. Factory reset requires typing `RESET`.
 
-Button mapping, macros, lift off distance, Motion Sync, and scroll direction are absent because no command has been verified for this exact model. Temporary DPI writes are not offered because reapplying the active onboard stage replaces them.
+The button editor covers both side buttons, wheel up/down, the DPI button, and the main buttons. For any profile, **Read all buttons** shows its eight inputs in both normal and Hypershift layers; selecting a cell opens a searchable action picker with concrete mouse, DPI, keyboard HID, media, and system codes. The editor reads a seven-byte mapping before editing and verifies every write by reading it back. The wheel has **Restore default** and **Invert direction** shortcuts; both update the selected profile's normal layer. Profile `0` is temporary active RAM, while profiles `1`–`5` have separate firmware mapping tables. Power-loss persistence of profile writes has not yet been tested. A separate **Activate selected profile** control sends updater command `05/04`; its effect on this receiver is not yet verified. The published button protocol also describes profile-switch action `0x07`, but this model's firmware skips that action, so the picker shows it as unavailable. Macros, lift off distance, and Motion Sync are not offered for this firmware. Temporary DPI writes are not offered because reapplying the active onboard stage replaces them.
 
 The receiver puts its configuration Feature Report inside a protected Mouse HID collection. Chrome/Edge cannot access it through direct WebHID, so that button is disabled. GitHub Pages serves only static HTML/CSS/JS/WASM; the receiver data is exchanged through your own loopback bridge. The bridge accepts the hosted page, the local preview, and local clients without an Origin header. It opens and closes the HID handle for each transaction after a long held handle caused status `0x04` timeouts while pointer movement still worked.
 
-Seven read commands and the settings above were tested through hidapi on this receiver. DPI stages were changed, read back byte for byte, reloaded after a page refresh, and restored. See the [validation log](validation/README.md) and [WebHID firmware feasibility analysis](validation/firmware-webhid-feasibility.md). Direct WebHID failed even after stopping the bridge. The stock receiver's protected HID descriptor matches [Chrome's protected collection rules](https://developer.chrome.com/docs/capabilities/hid#security_and_privacy).
+Seven setting reads and the button input/mapping reads were tested through hidapi on this receiver. A temporary RAM wheel inversion was read back, then physically confirmed by scrolling; profiles 1–5 were read only and retained their default wheel mappings. DPI stages were changed, read back byte for byte, reloaded after a page refresh, and restored. See the [validation log](validation/README.md) and [WebHID firmware feasibility analysis](validation/firmware-webhid-feasibility.md). Direct WebHID failed even after stopping the bridge. The stock receiver's protected HID descriptor matches [Chrome's protected collection rules](https://developer.chrome.com/docs/capabilities/hid#security_and_privacy).
 
 ### Development and diagnostics
 
@@ -50,7 +50,7 @@ With the bridge running, `node scripts/smoke.mjs` checks four read only transact
 
 If the bridge cannot be used, the parent workspace contains a hidapi CLI at `razer-viper-v3hs-util/razer_viper_v3hs_util.py`. A standalone GitHub Pages page using standard WebHID cannot configure this receiver's stock firmware.
 
-Protocol references: [OpenRazer device branch](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razermouse_driver.c), [report constructors](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razerchromacommon.c), [Chrome WebHID](https://developer.chrome.com/docs/capabilities/hid).
+Protocol references and thanks: [geezmolycos/razerqdhid button command documentation](https://github.com/geezmolycos/razerqdhid/blob/main/docs/cmd_button.md) documents the mapping format and action codes; thank you to its author for publishing the reverse engineering. Keyboard names and usage codes in the picker follow the [USB HID Usage Tables, Keyboard/Keypad page](https://usb.org/sites/default/files/hut1_5.pdf). This project's Viper V3 HyperSpeed action support is also checked against this model's firmware. See [OpenRazer device branch](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razermouse_driver.c), [report constructors](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razerchromacommon.c), and [Chrome WebHID](https://developer.chrome.com/docs/capabilities/hid).
 
 ## 中文
 
@@ -79,9 +79,9 @@ uv run --script scripts/bridge.py
 
 ## 功能
 
-读取轮询率、当前 X/Y DPI、DPI 档位、休眠时间、电量、充电状态和低电量提醒阈值。可逐档设置同步 X/Y DPI（100–30000）并选择活动档位，也可设置原厂接收器轮询率（125/500/1000 Hz）、休眠时间（60–900 秒）和低电量提醒（5–30%）；每次写入后读回。恢复出厂设置需输入 `RESET`。没有经本型号验证的按键映射、宏、LOD、Motion Sync、滚轮方向等命令不在界面中。
+读取轮询率、当前 X/Y DPI、DPI 档位、休眠时间、电量、充电状态和低电量提醒阈值。可逐档设置同步 X/Y DPI（100–30000）并选择活动档位，也可设置原厂接收器轮询率（125/500/1000 Hz）、休眠时间（60–900 秒）和低电量提醒（5–30%）；每次写入后读回。按键编辑器支持两个侧键、滚轮上下、DPI 键和主按键。「读取全部按键」可展示所选 Profile 的八个输入和普通／Hypershift 两层映射；点击格子会弹出可搜索的动作面板，列出具体鼠标、DPI、键盘 HID、媒体和系统键码。滚轮有「恢复默认」「翻转方向」快捷按钮，作用于所选配置档的普通层。`profile=0` 是临时活动 RAM 映射；`1`–`5` 有独立的固件映射表，但本机尚未测试断电后能否保存写入。另有「激活所选配置档」按钮调用更新器已知的 `05/04` 命令，其在此接收器上的实际效果尚未验证。引用文档的按键切换 Profile 动作 `0x07` 在此型号固件中被跳过，面板会列出并标注不可用。恢复出厂设置需输入 `RESET`。宏、LOD、Motion Sync 暂不提供。
 
-**验证状态**：七项读取命令已通过这台 `1532:00B8` 设备的 hidapi 路径验证。轮询率、即时 DPI、休眠时间、低电量阈值已做改值读回和恢复；DPI 档位已做活动档位切换、非当前档位改值、逐字节读回、页面刷新后重读和恢复。即时 DPI 写入会在活动档位重新应用时失效，所以界面只提供板载档位编辑。详细记录见 `validation/README.md`。本机 Chrome 授权后 `HIDDevice.open()` 失败；另一浏览器环境能打开 HID 对象，但七项 Feature Report 全部被拒绝。停止本地桥后问题仍在；单独运行 hidapi 成功。接口 0 的 HID 描述符把厂商 Feature Report 包在 Mouse application collection 内，与 [Chrome 的受保护 collection 规则](https://developer.chrome.com/docs/capabilities/hid#security_and_privacy)相符。
+**验证状态**：七项配置读取以及按键列表、映射读取已通过这台 `1532:00B8` 设备的 hidapi 路径验证。活动 RAM 滚轮映射已改值读回，用户实测滚动方向确已翻转；Profile 1–5 只读核对仍为默认映射。轮询率、即时 DPI、休眠时间、低电量阈值已做改值读回和恢复；DPI 档位已做活动档位切换、非当前档位改值、逐字节读回、页面刷新后重读和恢复。即时 DPI 写入会在活动档位重新应用时失效，所以界面只提供板载档位编辑。详细记录见 `validation/README.md`。本机 Chrome 授权后 `HIDDevice.open()` 失败；另一浏览器环境能打开 HID 对象，但七项 Feature Report 全部被拒绝。停止本地桥后问题仍在；单独运行 hidapi 成功。接口 0 的 HID 描述符把厂商 Feature Report 包在 Mouse application collection 内，与 [Chrome 的受保护 collection 规则](https://developer.chrome.com/docs/capabilities/hid#security_and_privacy)相符。
 
 页面现在也会逐个尝试同 PID 的已授权 HID 对象；本机两个对象均无法打开。固件级改动的证据、可能路线及恢复缺口见 [WebHID 固件可行性分析](validation/firmware-webhid-feasibility.md)。
 
@@ -125,6 +125,8 @@ uv run --script scripts/bridge.py
 
 ## 参考
 
+- 感谢 [geezmolycos/razerqdhid 的按键命令文档](https://github.com/geezmolycos/razerqdhid/blob/main/docs/cmd_button.md) 公开映射格式和动作编码。本项目还逐项对照了 Viper V3 HyperSpeed 固件的实际动作分支。
+- 按键选择面板中的键盘名称和键码参考 [USB HID Usage Tables 的 Keyboard/Keypad 页](https://usb.org/sites/default/files/hut1_5.pdf)。
 - [OpenRazer Viper V3 HyperSpeed 型号分支](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razermouse_driver.c)
 - [OpenRazer 报文构造](https://github.com/openrazer/openrazer/blob/6820f9da169d354bc7e6e93a0aa8683a6bb75792/driver/razerchromacommon.c)
 - [Chrome WebHID 文档](https://developer.chrome.com/docs/capabilities/hid)
