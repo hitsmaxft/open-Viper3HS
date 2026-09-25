@@ -21,8 +21,6 @@ VID = 0x1532
 PID = 0x00B8
 REPORT_LEN = 91
 ORIGINS = [None, "http://127.0.0.1:8765", "http://localhost:8765"]
-device = None
-device_info = None
 device_lock = asyncio.Lock()
 
 
@@ -63,27 +61,23 @@ def exchange(device, report):
     raise TimeoutError(f"设备响应超时；最后报文：{last.hex()}")
 
 
-def exchange_with_reconnect(report):
-    global device, device_info
-    if device is None:
-        device, device_info = open_device()
+def exchange_once(report):
+    device, _ = open_device()
     try:
         return exchange(device, report)
-    except (OSError, RuntimeError) as error:
-        # The receiver may have re-enumerated. Never resend an uncertain write.
-        if "写入长度异常：-1" not in str(error) and not isinstance(error, OSError):
-            raise
+    finally:
         device.close()
-        device = None
-        device_info = None
-        if not (report[8] & 0x80):
-            raise RuntimeError("设备句柄失效；请重新读取配置后重试写入") from error
-        device, device_info = open_device()
-        return exchange(device, report)
+
+
+def inspect_device():
+    device, info = open_device()
+    try:
+        return {"product": info.get("product_string"), "interface": info.get("interface_number")}
+    finally:
+        device.close()
 
 
 async def handle(socket):
-    global device, device_info
     async for message in socket:
         try:
             request = json.loads(message)
@@ -97,13 +91,11 @@ async def handle(socket):
                 } for item in candidates()]}
             elif operation == "open":
                 async with device_lock:
-                    if device is None:
-                        device, device_info = await asyncio.to_thread(open_device)
-                    response = {"product": device_info.get("product_string"), "interface": device_info.get("interface_number")}
+                    response = await asyncio.to_thread(inspect_device)
             elif operation == "exchange":
                 report = bytes.fromhex(request["report"])
                 async with device_lock:
-                    raw = await asyncio.to_thread(exchange_with_reconnect, report)
+                    raw = await asyncio.to_thread(exchange_once, report)
                 response = {"report": raw.hex()}
             else:
                 raise ValueError("未知操作；支持 list、open、exchange")
@@ -113,14 +105,9 @@ async def handle(socket):
 
 
 async def main():
-    global device
-    try:
-        async with serve(handle, HOST, PORT, origins=ORIGINS, max_size=4096):
-            print(f"open-Viper3HS bridge listening on ws://{HOST}:{PORT}", flush=True)
-            await asyncio.Future()
-    finally:
-        if device is not None:
-            device.close()
+    async with serve(handle, HOST, PORT, origins=ORIGINS, max_size=4096):
+        print(f"open-Viper3HS bridge listening on ws://{HOST}:{PORT}", flush=True)
+        await asyncio.Future()
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
 
 上游候选验证脚本 `scripts/driver/viper_v3_hyperspeed/verify_receiver.py` 生成 [receiver-readonly.json](receiver-readonly.json)：7 个读取事务全部收到状态 `0x02`，事务 ID、Class/Command、XOR 均通过校验。DPI 回包的 `data_size` 为 1，但完整报文的数据区 `00 06 40 06 40` 表示 X/Y 均 1600。
 
-随后一度所有配置 GET 返回设备状态 `0x04`（事务超时），鼠标移动仍正常。停止桥接服务并直接用 hidapi 读取也遇到同样状态。稍后固件版本、Edition ID 与配置读取自行恢复为 `0x02`；[receiver-readonly-latest.json](receiver-readonly-latest.json) 再次记录 7/7 成功。原因尚未定位，页面已明确显示配置事务超时，不再提示鼠标断电。
+随后一度所有配置 GET 返回设备状态 `0x04`（事务超时），鼠标移动仍正常。停止桥接服务并直接用 hidapi 读取也遇到同样状态。稍后固件版本、Edition ID 与配置读取恢复为 `0x02`；[receiver-readonly-latest.json](receiver-readonly-latest.json) 再次记录 7/7 成功。旧桥再次长期持有句柄后，程序化读取又遇到 `0x04`；停止桥并释放句柄后，直接读取恢复为 7/7。桥现改为每个事务打开并关闭句柄，新桥连续两轮四项 WASM/WS 读取均通过。长期稳定性仍待观察。页面已明确显示配置事务超时，不再提示鼠标断电。
 
 `node scripts/smoke.mjs` 通过 WebSocket 调试桥调用发布用 WASM，读取轮询率、DPI、档位、休眠时间并校验四个响应；结果与 Python 报告相符。浏览器界面连接调试桥后显示 `已读取 7/7 项配置`，刷新页面后自动重连并再次显示 7/7。
 
