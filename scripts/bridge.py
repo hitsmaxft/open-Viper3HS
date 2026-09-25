@@ -2,7 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = ["hidapi>=0.15,<1", "websockets>=15,<17"]
 # ///
-"""Loopback-only WebSocket bridge for local WebHID debugging.
+"""Loopback-only WebSocket bridge for the hosted or local configuration page.
 
 Run with: uv run --script scripts/bridge.py
 Protocol: JSON request/response, one request at a time per connection.
@@ -20,7 +20,7 @@ PORT = 8766
 VID = 0x1532
 PID = 0x00B8
 REPORT_LEN = 91
-ORIGINS = [None, "http://127.0.0.1:8765", "http://localhost:8765"]
+ORIGINS = [None, "http://127.0.0.1:8765", "http://localhost:8765", "https://gh.bhee.online"]
 device_lock = asyncio.Lock()
 
 

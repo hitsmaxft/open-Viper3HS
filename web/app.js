@@ -4,7 +4,6 @@ const REPORT_LENGTH = 91;
 const TX_CONFIG = 0x1f;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const $ = (id) => document.getElementById(id);
-$('bridge-connect').hidden = !['localhost', '127.0.0.1'].includes(location.hostname);
 const controls = ['refresh', 'reset', 'poll-input', 'idle-input'];
 let codec;
 let device;
@@ -50,7 +49,7 @@ function status(message, error = false) {
 }
 
 function updateControls() {
-  $('connect').disabled = busy || !codec;
+  $('connect').disabled = true;
   $('bridge-connect').disabled = busy || !codec;
   $('refresh').disabled = busy || !connected();
   for (const id of controls.slice(1)) $(id).disabled = busy || !connected() || !validated;
@@ -415,8 +414,8 @@ if (navigator.hid) navigator.hid.addEventListener('disconnect', (event) => {
 
 try {
   codec = await loadCodec();
-  status(navigator.hid ? 'WASM 已就绪；请选择接收器' : 'WASM 已就绪，但浏览器没有 WebHID', !navigator.hid);
-  if (!$('bridge-connect').hidden && sessionStorage.getItem('localBridge') === '1') {
+  status('WASM 已就绪；请启动本地 HID 桥并连接');
+  if (sessionStorage.getItem('localBridge') === '1') {
     await run('自动连接本地调试桥', connectBridge);
   }
 } catch (error) {

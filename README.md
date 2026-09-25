@@ -1,13 +1,27 @@
 # open-Viper3HS
 
-Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的配置页，可发布到 GitHub Pages。**原厂接收器的配置 Feature Report 位于顶层 Mouse HID collection 内，Chrome/Edge 会保护鼠标报告；在本机浏览器直连不能完成配置。**本地 hidapi 调试桥可驱动同一套网页与 WASM 编解码，不需要 OpenRazer。
+Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的配置页。**先在连接鼠标的电脑上启动本地 HID 桥，再打开 [GitHub Pages](https://gh.bhee.online/open-Viper3HS/) 或自行启动网页，点击「连接本地 HID 桥」。**原厂接收器的配置 Feature Report 位于顶层 Mouse HID collection 内，Chrome/Edge WebHID 无法直接访问；页面中的 WebHID 按钮因此禁用。无需 OpenRazer。
+
+## 使用
+
+在连接接收器的电脑上下载源码并启动桥（需要安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)）：
+
+```bash
+git clone https://github.com/hitsmaxft/open-Viper3HS.git
+cd open-Viper3HS
+uv run --script scripts/bridge.py
+```
+
+保持终端运行，用同一台电脑的 Chrome/Edge 打开 [GitHub Pages 配置页](https://gh.bhee.online/open-Viper3HS/)，点击 **连接本地 HID 桥**。页面应显示「已读取 7/7 项配置」，随后才能修改选项。桥只监听 `127.0.0.1:8766`；网页和接收器必须在同一台电脑上。浏览器若要求授予页面访问本地网络的权限，需要允许它连接本机桥。
+
+也可自行启动网页：在另一个终端运行 `./scripts/build.sh`，再执行 `python3 -m http.server 8765 --bind 127.0.0.1 --directory dist`，打开 `http://127.0.0.1:8765/` 并点击同一个连接按钮。自行构建网页需要 Rust 和 `wasm32-unknown-unknown` target；使用 GitHub Pages 不需要构建网页。
 
 ## 实现选择
 
 - **自写精简实现**。参考 OpenRazer 的型号分支和报文格式，不引入其 Linux 内核驱动、daemon 或运行时代码。本地工作区的协议分析见父目录 `docs/06_CONFIG_API_ANALYSIS.md`；独立发布此目录时不需要该文档。
 - Rust 无依赖 WASM 小核心：构造 91 字节 Feature Report、XOR 校验和响应匹配。
-- 原生 JavaScript：WebHID 设备选择、异步事务、配置界面。没有 npm 构建依赖。
-- GitHub Pages 只托管 HTML/CSS/JS/WASM。HID 数据留在用户浏览器和设备之间，不会上传到 Pages。
+- 原生 JavaScript：本地 WebSocket 事务、配置界面；保留禁用状态的 WebHID 实验代码。没有 npm 构建依赖。
+- GitHub Pages 只托管 HTML/CSS/JS/WASM。配置报文经本机回环 WebSocket 与本机接收器交换，不上传到 Pages。
 
 ## 功能
 
@@ -17,7 +31,7 @@ Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的配置页，可发�
 
 页面现在也会逐个尝试同 PID 的已授权 HID 对象；本机两个对象均无法打开。固件级改动的证据、可能路线及恢复缺口见 [WebHID 固件可行性分析](validation/firmware-webhid-feasibility.md)。
 
-## 本地构建
+## 本地构建细节
 
 要求 Rust 和 `wasm32-unknown-unknown` target：
 
@@ -27,9 +41,7 @@ rustup target add wasm32-unknown-unknown
 python3 -m http.server 8765 --directory dist
 ```
 
-打开 `http://localhost:8765`。`localhost` 和 GitHub Pages 的 HTTPS 均满足 WebHID 的安全上下文要求，但安全上下文不能解除浏览器对 Mouse collection 的保护。
-
-只有成功打开接收器并读回配置后，页面才启用写入选项。本机使用下述调试桥连接。
+只有成功通过本地桥读回配置后，页面才启用写入选项。`localhost` 和 GitHub Pages 的 HTTPS 虽都满足 WebHID 的安全上下文要求，安全上下文不能解除浏览器对 Mouse collection 的保护。
 
 ## 本地 WebSocket 调试桥
 
@@ -39,7 +51,7 @@ python3 -m http.server 8765 --directory dist
 uv run --script scripts/bridge.py
 ```
 
-服务只监听 `ws://127.0.0.1:8766`，依赖 `hidapi` 与 `websockets` 由 uv 隔离安装。页面打开在 `http://127.0.0.1:8765` 后，点“连接本地调试桥”，可绕过 Chrome 的 HID 接口限制并继续使用同一套 WASM 报文编码和界面。桥接服务只接受本地预览页的浏览器 Origin 或没有 Origin 的本机程序客户端。GitHub Pages 上的纯静态部署不会自动启动本地桥接服务。
+服务只监听 `ws://127.0.0.1:8766`，依赖 `hidapi` 与 `websockets` 由 uv 隔离安装。GitHub Pages 或本地页面点击「连接本地 HID 桥」，即可使用同一套 WASM 报文编码和界面。桥接服务只接受 `https://gh.bhee.online`、本地预览页的浏览器 Origin，或没有 Origin 的本机程序客户端。GitHub Pages 只提供静态网页，用户需自行启动本地桥。
 
 桥在每次配置事务中打开并关闭接收器句柄。实测长期持有句柄时，设备曾返回状态 `0x04`（配置事务超时），而鼠标移动正常；释放旧句柄后配置读取恢复。若页面显示桥已断开，刷新页面会自动重连已选过的本地桥。
 
@@ -51,11 +63,11 @@ uv run --script scripts/bridge.py
 
 ## GitHub Pages
 
-把本目录作为独立 GitHub 仓库根目录推送到 `main`。在仓库 Settings → Pages 中把 Source 设为 **GitHub Actions**。`.github/workflows/pages.yml` 会编译 WASM，并且只发布 `dist/`。不应把父目录的官方固件 EXE、ZIP 和逆向备份一起发布。
+源码在 [hitsmaxft/open-Viper3HS](https://github.com/hitsmaxft/open-Viper3HS)，网页在 [GitHub Pages](https://gh.bhee.online/open-Viper3HS/)。`.github/workflows/pages.yml` 会编译 WASM，并且只发布 `dist/`。网页不能单独访问这只原厂接收器，必须先运行本地桥。
 
 ## 原生备用路径
 
-GitHub Pages 不能加载本机 `hidapi` 动态库。若 Chrome 拒绝该设备接口，可使用父目录 `razer-viper-v3hs-util/razer_viper_v3hs_util.py` 的 hidapi 命令行工具。网页不能在这种情况下自动切换到本机 HID；那会需要本地服务，与纯 Pages 使用方式不同。
+若不能运行本地桥，可使用父目录 `razer-viper-v3hs-util/razer_viper_v3hs_util.py` 的 hidapi 命令行工具。纯 GitHub Pages + 标准 WebHID 在这只接收器的原厂固件上不可用。
 
 ## 参考
 
