@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0f10">
+  <title>open-Viper3HS</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="mark">V<span>3</span></div>
+      <div>
+        <p class="eyebrow">LOCAL DEVICE CONTROL · 1532:00B8</p>
+        <h1>open-Viper3HS</h1>
+        <p class="lead">轻量的 Viper V3 HyperSpeed 配置页。报文在浏览器本地生成，直接发送给你选择的接收器。</p>
+      </div>
+    </header>
+
+    <section class="card connect-card" aria-labelledby="connection-title">
+      <div>
+        <p class="eyebrow">01 / CONNECTION</p>
+        <h2 id="connection-title">连接鼠标接收器</h2>
+        <p id="connection-detail" class="muted">请用桌面版 Chrome 或 Edge 选择 Razer Viper V3 HyperSpeed。GitHub Pages 的 HTTPS 与本机 127.0.0.1 均可使用 WebHID；配置项将在成功读取设备后启用。</p>
+      </div>
+      <div class="actions">
+        <button id="connect" class="primary">选择设备</button>
+        <button id="bridge-connect" hidden>连接本地调试桥</button>
+        <button id="refresh" disabled>读取配置</button>
+      </div>
+      <p id="connection-status" class="status" role="status">正在加载 WASM…</p>
+    </section>
+
+    <section class="dashboard" aria-label="当前配置">
+      <div class="metric"><span>当前 DPI</span><strong id="current-dpi">—</strong><small>X / Y</small></div>
+      <div class="metric"><span>轮询率</span><strong id="current-poll">—</strong><small>原厂 1K 接收器</small></div>
+      <div class="metric"><span>休眠时间</span><strong id="current-idle">—</strong><small>秒</small></div>
+    </section>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="dpi-title">
+        <p class="eyebrow">02 / SENSITIVITY</p>
+        <h2 id="dpi-title">DPI</h2>
+        <p class="muted">当前 DPI 由活动档位决定。直接写即时 DPI 会在档位重新应用时恢复；请在下方修改板载档位。</p>
+        <div class="row"><span>板载档位</span><strong id="active-stage">—</strong></div>
+        <div id="stages" class="stages"><span class="muted">连接后读取</span></div>
+        <form id="stages-form" class="stage-editor">
+          <p class="muted">逐档修改 DPI（同步设置 X/Y），并选择当前档位。改动会写入板载配置，随后完整读回核对。</p>
+          <div id="stage-rows" class="stage-rows"></div>
+          <label for="stage-active">当前档位</label>
+          <div class="input-row"><select id="stage-active" disabled></select><button type="submit" disabled>写入档位</button></div>
+        </form>
+      </section>
+
+      <section class="card" aria-labelledby="rate-title">
+        <p class="eyebrow">03 / PERFORMANCE</p>
+        <h2 id="rate-title">轮询率</h2>
+        <p class="muted">此页仅针对 VID 1532 / PID 00B8 的原厂接收器。</p>
+        <form id="poll-form">
+          <label for="poll-input">报告频率</label>
+          <div class="input-row"><select id="poll-input" disabled><option value="125">125 Hz</option><option value="500">500 Hz</option><option value="1000" selected>1000 Hz</option></select><button type="submit" disabled>写入频率</button></div>
+        </form>
+        <div class="divider"></div>
+        <form id="idle-form">
+          <label for="idle-input">休眠时间（秒）</label>
+          <div class="input-row"><input id="idle-input" type="number" min="60" max="900" step="1" value="300" required disabled><button type="submit" disabled>写入时间</button></div>
+        </form>
+      </section>
+    </div>
+
+    <section class="card power" aria-labelledby="power-title">
+      <p class="eyebrow">04 / POWER</p>
+      <h2 id="power-title">电源状态</h2>
+      <div class="power-values"><div>电量 <strong id="battery-level">—</strong></div><div>充电状态 <strong id="charging-status">—</strong></div><div>低电量提醒 <strong id="current-threshold">—</strong></div></div>
+      <form id="threshold-form">
+        <label for="threshold-input">低电量提醒阈值（5–30%）</label>
+        <div class="input-row"><input id="threshold-input" type="number" min="5" max="30" step="1" value="30" required disabled><button type="submit" disabled>写入阈值</button></div>
+      </form>
+    </section>
+
+    <section class="card danger" aria-labelledby="reset-title">
+      <p class="eyebrow">05 / DEVICE</p>
+      <h2 id="reset-title">恢复出厂配置</h2>
+      <p class="muted">会重置鼠标配置。点击后还需要输入 RESET 确认。不会更改 macOS 的滚动方向设置。</p>
+      <button id="reset" disabled>恢复出厂设置</button>
+    </section>
+
+    <section class="card diagnostics" aria-labelledby="log-title">
+      <div class="row"><h2 id="log-title">设备日志</h2><button id="clear-log" class="subtle">清空</button></div>
+      <pre id="log" aria-live="polite">等待连接。</pre>
+    </section>
+
+    <footer>WebHID 或本地调试桥 + Rust WASM · 无账户 · <a href="https://github.com/openrazer/openrazer" target="_blank" rel="noreferrer">协议参考</a></footer>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
