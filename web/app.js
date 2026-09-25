@@ -122,7 +122,11 @@ async function transact(commandClass, commandId, data, tx = TX_CONFIG) {
   try {
     await device.sendFeatureReport(0, frame.slice(1));
   } catch (error) {
-    throw new Error(`发送被浏览器拒绝（可尝试重新选择另一个 HID 接口）：${error.message || error}`);
+    const mouseCollection = device.collections.some((item) => item.usagePage === 1 && item.usage === 2);
+    const hint = mouseCollection
+      ? '该接收器的配置 Feature Report 位于 Mouse collection，浏览器可能按受保护鼠标报告拦截；请使用本地调试桥。'
+      : '浏览器拒绝发送 Feature Report。';
+    throw new Error(`${hint} ${error.message || error}`);
   }
   for (let attempt = 0; attempt < 60; attempt++) {
     await sleep(50);
@@ -244,38 +248,46 @@ async function refresh() {
   stageRaw = undefined;
   thresholdRaw = undefined;
   let successes = 0;
+  let firstError;
   for (const [name, reader] of [['轮询率', readPoll], ['DPI', readDpi], ['DPI 档位', readStages], ['休眠时间', readIdle], ['电量', readBattery], ['充电状态', readCharging], ['低电量阈值', readThreshold]]) {
     try {
       await reader();
       successes++;
     } catch (error) {
+      firstError ??= error.message || String(error);
       log(`${name}读取失败：${error.message || error}`);
+      if (String(error.message || error).includes('Feature Report')) break;
     }
   }
   validated = successes >= 2;
   const failure = bridge?.readyState === WebSocket.OPEN
     ? '未能读取配置；接收器的配置事务可能超时。鼠标移动正常也可能发生此情况。'
-    : '未能读取配置；请重新选择设备的另一个 HID 接口。';
+    : `未能读取配置：${firstError || '浏览器无法访问该接收器的配置报告'}`;
   status(successes ? `已读取 ${successes}/7 项配置${validated ? '' : '；写入功能暂不可用'}` : failure, successes === 0);
 }
 
 $('connect').addEventListener('click', () => run('连接', async () => {
   if (!navigator.hid) throw new Error(`当前页面没有 WebHID（安全上下文：${window.isSecureContext ? '是' : '否'}）；请使用桌面版 Chrome 或 Edge，通过 HTTPS 或本机 127.0.0.1 访问`);
   const chosen = await navigator.hid.requestDevice({ filters: [{ vendorId: VID, productId: PID }] });
-  if (!chosen.length) { status('未选择设备；请在 Chrome 设备选择框中确认，或检查接收器是否列出'); return; }
+  if (!chosen.length) { status('未选择设备；请在浏览器设备选择框中确认，或检查接收器是否列出'); return; }
   if (device?.opened) await device.close();
   if (bridge?.readyState === WebSocket.OPEN) bridge.close();
   bridge = undefined;
   sessionStorage.removeItem('localBridge');
   device = chosen[0];
   validated = false;
+  const collections = device.collections.map((item) => `${item.usagePage.toString(16)}:${item.usage.toString(16)}`).join(', ') || '未声明';
+  log(`已选择 HID 设备；collections: ${collections}`);
+  if (device.collections.length && device.collections.every((item) => item.usagePage === 1 && item.usage === 2)) {
+    throw new Error('浏览器只暴露 Mouse (01:02) collection；该接收器的配置 Feature Report 位于受保护的鼠标 collection 内。请使用本地调试桥。');
+  }
   try {
     await device.open();
   } catch (error) {
     throw new Error(`已授权 ${device.productName}，但 Chrome 无法打开其 HID 接口：${error.message || error}`);
   }
   $('connection-detail').textContent = `${device.productName} · VID ${VID.toString(16)} / PID ${PID.toString(16)}`;
-  log(`已打开 HID 接口；collections: ${device.collections.map((c) => `${c.usagePage.toString(16)}:${c.usage.toString(16)}`).join(', ') || '未声明'}`);
+  log(`已打开 HID 接口；collections: ${collections}`);
   await refresh();
 }));
 

@@ -22,11 +22,11 @@
       <div>
         <p class="eyebrow">01 / CONNECTION</p>
         <h2 id="connection-title">连接鼠标接收器</h2>
-        <p id="connection-detail" class="muted">请用桌面版 Chrome 或 Edge 选择 Razer Viper V3 HyperSpeed。GitHub Pages 的 HTTPS 与本机 127.0.0.1 均可使用 WebHID；配置项将在成功读取设备后启用。</p>
+        <p id="connection-detail" class="muted">请选择 Razer Viper V3 HyperSpeed。原厂接收器把配置报告放在 Mouse collection 中，Chrome/Edge 可能阻止网页发送；本机可连接调试桥。配置项将在成功读取设备后启用。</p>
       </div>
       <div class="actions">
-        <button id="connect" class="primary">选择设备</button>
-        <button id="bridge-connect" hidden>连接本地调试桥</button>
+        <button id="bridge-connect" class="primary" hidden>连接本地调试桥</button>
+        <button id="connect">尝试 WebHID 直连</button>
         <button id="refresh" disabled>读取配置</button>
       </div>
       <p id="connection-status" class="status" role="status">正在加载 WASM…</p>

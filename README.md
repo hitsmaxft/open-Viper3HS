@@ -1,6 +1,6 @@
 # open-Viper3HS
 
-Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的静态配置页。可发布到 GitHub Pages，在支持打开此 HID 接口的桌面版 Chrome / Edge 中直接使用；网页不需要服务端，也不安装 OpenRazer。本机 macOS Chrome 虽能授权设备，却无法打开其 HID 接口，需要本地调试桥。
+Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的配置页，可发布到 GitHub Pages。**原厂接收器的配置 Feature Report 位于顶层 Mouse HID collection 内，Chrome/Edge 会保护鼠标报告；在本机浏览器直连不能完成配置。**本地 hidapi 调试桥可驱动同一套网页与 WASM 编解码，不需要 OpenRazer。
 
 ## 实现选择
 
@@ -13,7 +13,7 @@ Razer Viper V3 HyperSpeed（原厂接收器 `1532:00B8`）的静态配置页。�
 
 读取轮询率、当前 X/Y DPI、DPI 档位、休眠时间、电量、充电状态和低电量提醒阈值。可逐档设置同步 X/Y DPI（100–30000）并选择活动档位，也可设置原厂接收器轮询率（125/500/1000 Hz）、休眠时间（60–900 秒）和低电量提醒（5–30%）；每次写入后读回。恢复出厂设置需输入 `RESET`。没有经本型号验证的按键映射、宏、LOD、Motion Sync、滚轮方向等命令不在界面中。
 
-**验证状态**：七项读取命令已通过这台 `1532:00B8` 设备的 hidapi 路径验证。轮询率、即时 DPI、休眠时间、低电量阈值已做改值读回和恢复；DPI 档位已做活动档位切换、非当前档位改值、逐字节读回、页面刷新后重读和恢复。即时 DPI 写入会在活动档位重新应用时失效，所以界面只提供板载档位编辑。详细记录见 `validation/README.md`。本机 Chrome 能显示设备授权框，但 `HIDDevice.open()` 返回 `Failed to open the device`；HTTPS 的 RazerKit 页面在同一台机器上也得到相同错误。这不是本地 HTTP 地址造成的。浏览器可能屏蔽鼠标类 HID collection。
+**验证状态**：七项读取命令已通过这台 `1532:00B8` 设备的 hidapi 路径验证。轮询率、即时 DPI、休眠时间、低电量阈值已做改值读回和恢复；DPI 档位已做活动档位切换、非当前档位改值、逐字节读回、页面刷新后重读和恢复。即时 DPI 写入会在活动档位重新应用时失效，所以界面只提供板载档位编辑。详细记录见 `validation/README.md`。本机 Chrome 授权后 `HIDDevice.open()` 失败；另一浏览器环境能打开 HID 对象，但七项 Feature Report 全部被拒绝。停止本地桥后问题仍在；单独运行 hidapi 成功。接口 0 的 HID 描述符把厂商 Feature Report 包在 Mouse application collection 内，与 [Chrome 的受保护 collection 规则](https://developer.chrome.com/docs/capabilities/hid#security_and_privacy)相符。
 
 ## 本地构建
 
@@ -25,9 +25,9 @@ rustup target add wasm32-unknown-unknown
 python3 -m http.server 8765 --directory dist
 ```
 
-打开 `http://localhost:8765`。`localhost` 和 GitHub Pages 的 HTTPS 均可满足 WebHID 的安全上下文要求。首次连接必须在浏览器设备选择框中授权。
+打开 `http://localhost:8765`。`localhost` 和 GitHub Pages 的 HTTPS 均满足 WebHID 的安全上下文要求，但安全上下文不能解除浏览器对 Mouse collection 的保护。
 
-只有成功打开接收器并读回配置后，页面才启用写入选项。若显示已授权但无法打开 HID 接口，这是 Chrome 对该接口或 macOS HID 独占访问的限制；改用 HTTPS 地址不会改变该结果。
+只有成功打开接收器并读回配置后，页面才启用写入选项。本机使用下述调试桥连接。
 
 ## 本地 WebSocket 调试桥
 
